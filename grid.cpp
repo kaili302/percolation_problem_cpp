@@ -1,58 +1,67 @@
 #include "grid.h"
+#include <iterator>
+#include <iostream>
 
 Grid::Grid(size_t N)
-: d_N { N }
-, d_size{ N * N }
-, d_topRoot{ d_size }
-, d_botRoot{ d_size + 1 }
-, d_roots( d_size + 2 )
+: d_N {N}
+, d_totalCells{N * N}
+, d_openCells{0}
+, d_virtualTop{d_totalCells}
+, d_virtualBot{d_totalCells + 1}
+, d_isOpen(d_totalCells, false)
+, d_ufRoots(d_totalCells + 2)
 {
-    for (size_t cell = 0; cell < d_size; ++cell) {
+    for (size_t cell = 0; cell < d_totalCells; ++cell) {
         if (cell < N) {
-            d_roots[cell] = d_topRoot;
+            d_ufRoots[cell] = d_virtualTop;
         }
         else if (cell >= N * (N -1)) {
-            d_roots[cell] = d_botRoot;
+            d_ufRoots[cell] = d_virtualBot;
         }
         else {
-            d_roots[cell] = cell;
+            d_ufRoots[cell] = cell;
         }
     }
-    d_roots[d_topRoot] = d_topRoot;
-    d_roots[d_botRoot] = d_botRoot;
+    d_ufRoots[d_virtualTop] = d_virtualTop;
+    d_ufRoots[d_virtualBot] = d_virtualBot;
 }
 
 bool Grid::isPercolated() {
-    return getRoot(d_topRoot) == getRoot(d_botRoot);
+    return getUfRoot(d_virtualTop) == getUfRoot(d_virtualBot);
 }
 
-void Grid::openCell(size_t row, size_t col) {
+void Grid::open(size_t row, size_t col) {
     size_t pos = row * d_N + col;
-    if (pos >= d_size || d_roots[pos] != pos) {
+    if (pos >= d_totalCells || d_isOpen[pos]) {
         // invalid position or position is already opened
         return;
     }
 
-    ++d_opens;
+    ++d_openCells;
+    d_isOpen[pos] = true;
 
     connectAdjacents(pos);
 }
 
 double Grid::percentOfOpenCells() const {
-    return d_opens * 1.0 / d_size;
+    return d_openCells * 1.0 / d_totalCells;
 }
 
-size_t Grid::getRoot(size_t pos) {
-    while (pos != d_roots[pos]) {
-        d_roots[pos] = d_roots[d_roots[pos]];
-        pos = d_roots[pos];
+size_t Grid::getUfRoot(size_t pos) {
+    while (pos != d_ufRoots[pos]) {
+        d_ufRoots[pos] = d_ufRoots[d_ufRoots[pos]];
+        pos = d_ufRoots[pos];
     }
     return pos;
 }
 
+bool Grid::isOpen(size_t pos) const{
+    return pos < d_totalCells && d_isOpen[pos];
+}
+
 void Grid::connectAdjacents(size_t pos) {
-    d_roots[pos-1] = pos;
-    d_roots[pos+1] = pos;
-    d_roots[pos-d_N] = pos;
-    d_roots[pos+d_N] = pos;
+    if (isOpen(pos-1)) { d_ufRoots[getUfRoot(pos-1)] = pos; }
+    if (isOpen(pos+1)) { d_ufRoots[getUfRoot(pos+1)] = pos; }
+    if (isOpen(pos-d_N)) { d_ufRoots[getUfRoot(pos-d_N)] = pos; }
+    if (isOpen(pos+d_N)) { d_ufRoots[getUfRoot(pos+d_N)] = pos; }
 }

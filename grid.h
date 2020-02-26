@@ -2,9 +2,6 @@
 
 #include <vector>
 
-constexpr int OPEN = 1;
-constexpr int CLOSE = 0;
-
 class Grid {
   public:
     explicit Grid(size_t N);
@@ -13,7 +10,7 @@ class Grid {
     bool isPercolated();
         // return true if grid is percolated.
 
-    void openCell(size_t row, size_t col);
+    void open(size_t row, size_t col);
         // open the cell located at (row, col)
 
     double percentOfOpenCells() const;
@@ -22,19 +19,28 @@ class Grid {
   private:
     size_t d_N;
 
-    size_t d_size;
+    size_t d_totalCells;
 
-    size_t d_opens;
+    size_t d_openCells;
 
-    size_t d_topRoot;
+    size_t d_virtualTop;
+        // All cells at first row are connected to the virtual top
 
-    size_t d_botRoot;
+    size_t d_virtualBot;
+        // All cells at bottom row are connected to the virtual bottom
 
-    std::vector<int> d_roots;
+    std::vector<bool> d_isOpen;
+        // Track if a cell is opened
 
-    size_t getRoot(size_t pos);
+    bool isOpen(size_t pos) const;
+        // Return true if 'pos' **is valid** and cell is open
+
+    std::vector<int> d_ufRoots;
+        // Union-find roots tracker
+
+    size_t getUfRoot(size_t pos);
+        // Union-find get root of 'pos'
 
     void connectAdjacents(size_t pos);
+        // Connect all adjacent cells (up, down, left, right)
 };
-
-
